@@ -29,7 +29,9 @@
 
 # 跨平台注意事项
 ffmpeg调用的路径并没有处理，需要在编译后的目录下建立个ffmpeg.exe的软链：
+
 先用：whereis ffmpeg 看看ffmpeg在哪个路径，比如：/usr/bin/ffmpeg
+
 ln -s /usr/bin/ffmpeg ./ffmpeg.exe
 
 # N_m3u8DL-CLI
