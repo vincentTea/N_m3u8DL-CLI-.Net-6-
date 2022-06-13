@@ -67,12 +67,15 @@ namespace N_m3u8DL_CLI
         {
             try
             {
+                var parentDirectory = Path.GetDirectoryName(SavePath);
+                if (string.IsNullOrEmpty(parentDirectory)) parentDirectory = SavePath;
+
                 //直播下载
                 if (IsLive)
                 {
                     IsDone = false;  //设置为未完成下载
 
-                    if (Method == "NONE" || method.Contains("NOTSUPPORTED")) 
+                    if (Method == "NONE" || method.Contains("NOTSUPPORTED"))
                     {
                         LOGGER.PrintLine("<" + SegIndex + " Downloading>");
                         LOGGER.WriteLine("<" + SegIndex + " Downloading>");
@@ -116,7 +119,7 @@ namespace N_m3u8DL_CLI
                         //LOGGER.STOPLOG = true;  //停止记录日志
                     }
                     HLSLiveDownloader.REC_DUR += SegDur;
-                    if (HLSLiveDownloader.REC_DUR_LIMIT != -1 && HLSLiveDownloader.REC_DUR >= HLSLiveDownloader.REC_DUR_LIMIT) 
+                    if (HLSLiveDownloader.REC_DUR_LIMIT != -1 && HLSLiveDownloader.REC_DUR >= HLSLiveDownloader.REC_DUR_LIMIT)
                     {
                         LOGGER.PrintLine(strings.recordLimitReached, LOGGER.Warning);
                         LOGGER.WriteLine(strings.recordLimitReached);
@@ -127,10 +130,11 @@ namespace N_m3u8DL_CLI
                 //点播下载
                 else
                 {
-                    if (!Directory.Exists(Path.GetDirectoryName(SavePath)))
-                        Directory.CreateDirectory(Path.GetDirectoryName(SavePath)); //新建文件夹  
+                    //不存在路径就新建文件夹
+                    if (!Directory.Exists(parentDirectory)) Directory.CreateDirectory(parentDirectory);
+
                     //是否存在文件，存在则不下载
-                    if (File.Exists(Path.GetDirectoryName(savePath) + "\\" + Path.GetFileNameWithoutExtension(savePath) + ".ts"))
+                    if (File.Exists(Path.Combine(parentDirectory, Path.GetFileNameWithoutExtension(savePath) + ".ts")))
                     {
                         Global.BYTEDOWN++; //防止被速度监控程序杀死
                         //Console.WriteLine("Exists " + Path.GetFileNameWithoutExtension(savePath) + ".ts");
@@ -176,23 +180,22 @@ namespace N_m3u8DL_CLI
                         Global.HttpDownloadFile(fileUrl, savePath, TimeOut, Headers, StartByte, ExpectByte);
                     }
                 }
-                if (File.Exists(savePath) && Global.ShouldStop == false) 
+                if (File.Exists(savePath) && Global.ShouldStop == false)
                 {
                     FileInfo fi = new FileInfo(savePath);
                     if (Method == "NONE" || method.Contains("NOTSUPPORTED"))
                     {
-                        fi.MoveTo(Path.GetDirectoryName(savePath) + "\\" + Path.GetFileNameWithoutExtension(savePath) + ".ts");
+                        fi.MoveTo(Path.Combine( Path.GetDirectoryName(savePath) , Path.GetFileNameWithoutExtension(savePath) + ".ts"));
                         DownloadManager.DownloadedSize += fi.Length;
                         //Console.WriteLine(Path.GetFileNameWithoutExtension(savePath) + " Completed.");
                     }
-                    else if (File.Exists(fi.FullName)
-                        && Method == "AES-128") 
+                    else if (File.Exists(fi.FullName) && Method == "AES-128")
                     {
                         //解密
                         try
                         {
-                            byte[] decryptBuff = null;
-                            if(fileUrl.Contains(".51cto.com/")) //使用AES-128-ECB模式解密
+                            byte[] decryptBuff;
+                            if (fileUrl.Contains(".51cto.com/")) //使用AES-128-ECB模式解密
                             {
                                 decryptBuff = Decrypter.AES128Decrypt(
                                     fi.FullName,
@@ -209,7 +212,7 @@ namespace N_m3u8DL_CLI
                                     Decrypter.HexStringToBytes(Iv)
                                     );
                             }
-                            FileStream fs = new FileStream(Path.GetDirectoryName(savePath) + "\\" + Path.GetFileNameWithoutExtension(savePath) + ".ts", FileMode.Create);
+                            FileStream fs = new FileStream(Path.Combine(parentDirectory, Path.GetFileNameWithoutExtension(savePath) + ".ts"), FileMode.Create);
                             fs.Write(decryptBuff, 0, decryptBuff.Length);
                             fs.Close();
                             DownloadManager.DownloadedSize += fi.Length;
@@ -219,6 +222,8 @@ namespace N_m3u8DL_CLI
                         catch (Exception ex)
                         {
                             LOGGER.PrintLine(ex.Message, LOGGER.Error);
+                            LOGGER.PrintLine(ex.Source, LOGGER.Error);
+                            LOGGER.PrintLine(ex.StackTrace[0].ToString(), LOGGER.Error);
                             LOGGER.WriteLineError(ex.Message);
                             Thread.Sleep(3000);
                             Environment.Exit(-1);
@@ -228,6 +233,7 @@ namespace N_m3u8DL_CLI
                     {
                         LOGGER.WriteLineError(strings.SomethingWasWrong);
                         LOGGER.PrintLine(strings.SomethingWasWrong, LOGGER.Error);
+
                         return;
                     }
                     return;
@@ -236,12 +242,14 @@ namespace N_m3u8DL_CLI
             catch (Exception ex)
             {
                 LOGGER.WriteLineError(ex.Message);
+                LOGGER.PrintLine(ex.Source, LOGGER.Error);
+                LOGGER.PrintLine(ex.StackTrace[0].ToString(), LOGGER.Error);
                 if (ex.Message.Contains("404") || ex.Message.Contains("400"))//(400) 错误的请求,片段过期会提示400错误
                 {
                     IsDone = true;
                     return;
                 }
-                else if (IsLive && count++ < Retry) 
+                else if (IsLive && count++ < Retry)
                 {
                     Thread.Sleep(2000);//直播一般3-6秒一个片段
                     Down();

@@ -109,7 +109,7 @@ namespace N_m3u8DL_CLI
                 LOGGER.WriteLine(strings.hasExternalAudioTrack);
                 LOGGER.PrintLine(strings.hasExternalAudioTrack, LOGGER.Warning);
             }
-            catch (Exception) {}
+            catch (Exception) { }
             try
             {
                 if (initJson["m3u8Info"]["sub"].ToString() != "")
@@ -147,8 +147,8 @@ namespace N_m3u8DL_CLI
             LOGGER.WriteLine(strings.startDownloading);
             LOGGER.PrintLine(strings.startDownloading, LOGGER.Warning);
 
-            //下载MAP文件（若有）
-            downloadMap:
+        //下载MAP文件（若有）
+        downloadMap:
             if (HasExtMap)
             {
                 LOGGER.PrintLine(strings.downloadingMapFile);
@@ -164,13 +164,13 @@ namespace N_m3u8DL_CLI
                     sd.StartByte = Convert.ToUInt32(tmp[1].Split('@')[1]);
                     sd.ExpectByte = Convert.ToUInt32(tmp[1].Split('@')[0]);
                 }
-                sd.SavePath = DownDir + "\\!MAP.tsdownloading";
+                sd.SavePath = Path.Combine(DownDir, "!MAP.tsdownloading");
                 if (File.Exists(sd.SavePath))
                     File.Delete(sd.SavePath);
-                if (File.Exists(DownDir + "\\Part_0\\!MAP.ts"))
-                    File.Delete(DownDir + "\\Part_0\\!MAP.ts");
+                if (File.Exists(Path.Combine(DownDir, "Part_0", "!MAP.ts")))
+                    File.Delete(Path.Combine(DownDir, "Part_0", "!MAP.ts"));
                 sd.Down();  //开始下载
-                if (!File.Exists(DownDir + "\\!MAP.ts")) //检测是否成功下载
+                if (!File.Exists(Path.Combine(DownDir, "!MAP.ts"))) //检测是否成功下载
                 {
                     Thread.Sleep(1000);
                     goto downloadMap;
@@ -179,7 +179,7 @@ namespace N_m3u8DL_CLI
 
             //首先下载第一个分片
             JToken firstSeg = JArray.Parse(parts[0].ToString())[0];
-            if (!File.Exists(DownDir + "\\Part_" + 0.ToString(partsPadZero) + "\\" + firstSeg["index"].Value<int>().ToString(segsPadZero) + ".ts"))
+            if (!File.Exists(Path.Combine(DownDir, $"Part_{0.ToString(partsPadZero)}", firstSeg["index"].Value<int>().ToString(segsPadZero) + ".ts")))
             {
                 try
                 {
@@ -202,7 +202,7 @@ namespace N_m3u8DL_CLI
                     if (firstSeg["startByte"] != null)
                         sd.StartByte = firstSeg["startByte"].Value<long>();
                     sd.Headers = Headers;
-                    sd.SavePath = DownDir + "\\Part_" + 0.ToString(partsPadZero) + "\\" + firstSeg["index"].Value<int>().ToString(segsPadZero) + ".tsdownloading";
+                    sd.SavePath = Path.Combine(DownDir, $"Part_{0.ToString(partsPadZero)}", $"{firstSeg["index"].Value<int>().ToString(segsPadZero)}.tsdownloading");
                     if (File.Exists(sd.SavePath))
                         File.Delete(sd.SavePath);
                     LOGGER.PrintLine(strings.downloadingFirstSegement);
@@ -217,9 +217,9 @@ namespace N_m3u8DL_CLI
 
             if (Global.HadReadInfo == false)
             {
-                string href = DownDir + "\\Part_" + 0.ToString(partsPadZero) + "\\" + firstSeg["index"].Value<int>().ToString(segsPadZero) + ".ts";
-                if (File.Exists(DownDir + "\\!MAP.ts"))
-                    href = DownDir + "\\!MAP.ts";
+                string href = Path.Combine(DownDir, $"Part_{0.ToString(partsPadZero)}", $"{firstSeg["index"].Value<int>().ToString(segsPadZero)}.ts");
+                if (File.Exists(Path.Combine(DownDir, "!MAP.ts")))
+                    href = Path.Combine(DownDir, "!MAP.ts");
                 Global.GzipHandler(href);
                 bool flag = false;
                 foreach (string ss in (string[])Global.GetVideoInfo(href).ToArray(typeof(string)))
@@ -271,7 +271,7 @@ namespace N_m3u8DL_CLI
                             sd.TimeOut = TimeOut;
                             sd.SegDur = info["duration"].Value<double>();
                             if (sd.SegDur < 0) sd.SegDur = 0; //防止负数
-                                sd.FileUrl = info["segUri"].Value<string>();
+                            sd.FileUrl = info["segUri"].Value<string>();
                             //VTT字幕
                             if (isVTT == false && (sd.FileUrl.Trim('\"').EndsWith(".vtt") || sd.FileUrl.Trim('\"').EndsWith(".webvtt")))
                                 isVTT = true;
@@ -286,12 +286,12 @@ namespace N_m3u8DL_CLI
                             if (firstSeg["startByte"] != null)
                                 sd.StartByte = info["startByte"].Value<long>();
                             sd.Headers = Headers;
-                            sd.SavePath = DownDir + "\\Part_" + info["part"].Value<int>().ToString(partsPadZero) + "\\" + info["index"].Value<int>().ToString(segsPadZero) + ".tsdownloading";
+                            sd.SavePath = Path.Combine(DownDir, $"Part_{info["part"].Value<int>().ToString(partsPadZero)}", $"{info["index"].Value<int>().ToString(segsPadZero)}.tsdownloading");
                             if (File.Exists(sd.SavePath))
                                 File.Delete(sd.SavePath);
                             if (!Global.ShouldStop)
                                 sd.Down();  //开始下载
-                            }
+                        }
                         return sd;
                     },
                     (sd) => { });
@@ -318,7 +318,7 @@ namespace N_m3u8DL_CLI
             //检测是否下完
             IsComplete(Convert.ToInt32(segCount));
         }
-        
+
         public void IsComplete(int segCount)
         {
             int tsCount = 0;
@@ -329,9 +329,9 @@ namespace N_m3u8DL_CLI
                 goto ll;
             }
 
-            for (int i = 0; i < PartsCount; i++) 
+            for (int i = 0; i < PartsCount; i++)
             {
-                tsCount += Global.GetFileCount(DownDir + "\\Part_" + i.ToString(partsPadZero), ".ts");
+                tsCount += Global.GetFileCount(Path.Combine(DownDir, $"Part_{i.ToString(partsPadZero)}"), ".ts");
             }
 
         ll:
@@ -353,8 +353,8 @@ namespace N_m3u8DL_CLI
                 LOGGER.PrintLine(strings.downloadComplete + (DisableIntegrityCheck ? "(" + strings.disableIntegrityCheck + ")" : ""));
                 if (NoMerge == false)
                 {
-                    string exePath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
-                    string driverName = exePath.Remove(exePath.IndexOf(':'));
+                    //string exePath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
+                    //string driverName = exePath.Remove(exePath.IndexOf(':'));
                     Console.Title = "Done.";
                     LOGGER.WriteLine(strings.startMerging);
                     LOGGER.PrintLine(strings.startMerging, LOGGER.Warning);
@@ -362,7 +362,7 @@ namespace N_m3u8DL_CLI
                     if (isVTT == true)
                     {
                         MuxFormat = "vtt";
-                        Global.ReAdjustVtt(Global.GetFiles(DownDir + "\\Part_0", ".ts"));
+                        Global.ReAdjustVtt(Global.GetFiles(Path.Combine(DownDir, "Part_0"), ".ts"));
                     }
                     //只有一个Part直接用ffmpeg合并
                     if (PartsCount == 1)
@@ -372,33 +372,36 @@ namespace N_m3u8DL_CLI
                          * Test with Powershell, its C:/Users/nilao/Desktop/新建文件夹/3.log
                          */
                         FFmpeg.OutPutPath = Path.Combine(Directory.GetParent(DownDir).FullName, DownName);
-                        FFmpeg.ReportFile = driverName + "\\:" + exePath.Remove(0, exePath.IndexOf(':') + 1).Replace("\\", "/") + "/Logs/" + Path.GetFileNameWithoutExtension(LOGGER.LOGFILE) + fflogName;
-                        if (File.Exists(DownDir + "\\!MAP.ts"))
-                            File.Move(DownDir + "\\!MAP.ts", DownDir + "\\Part_0\\!MAP.ts");
+                        FFmpeg.ReportFile = Path.Combine(Directory.GetParent(DownDir).FullName, "Logs", Path.GetFileNameWithoutExtension(LOGGER.LOGFILE) + fflogName);
+                        if (!Directory.Exists(Path.Combine(Directory.GetParent(DownDir).FullName, "Logs")))
+                            Directory.CreateDirectory(Path.Combine(Directory.GetParent(DownDir).FullName, "Logs"));
+
+                        if (File.Exists(Path.Combine(DownDir, "!MAP.ts")))
+                            File.Move(Path.Combine(DownDir, "!MAP.ts"), Path.Combine(DownDir, "Part_0", "!MAP.ts"));
 
                         if (BinaryMerge)
                         {
                             LOGGER.PrintLine(strings.binaryMergingPleaseWait);
                             MuxFormat = "ts";
                             //有MAP文件，一般为mp4，采取默认动作
-                            if(File.Exists(DownDir + "\\Part_0\\!MAP.ts"))
+                            if (File.Exists(Path.Combine(DownDir, "Part_0", "!MAP.ts")))
                                 MuxFormat = "mp4";
                             if (isVTT)
                                 MuxFormat = "vtt";
 
                             if (Global.AUDIO_TYPE != "")
                                 MuxFormat = Global.AUDIO_TYPE;
-                            Global.CombineMultipleFilesIntoSingleFile(Global.GetFiles(DownDir + "\\Part_0", ".ts"), FFmpeg.OutPutPath + $".{MuxFormat}");
+                            Global.CombineMultipleFilesIntoSingleFile(Global.GetFiles(Path.Combine(DownDir, "Part_0"), ".ts"), FFmpeg.OutPutPath + $".{MuxFormat}");
                         }
                         else
                         {
                             if (Global.VIDEO_TYPE != "DV") //不是杜比视界
                             {
                                 //检测是否为MPEG-TS封装，不是的话就转换为TS封装
-                                foreach (string s in Global.GetFiles(DownDir + "\\Part_0", ".ts"))
+                                foreach (string s in Global.GetFiles(Path.Combine(DownDir, "Part_0"), ".ts"))
                                 {
                                     //跳过有MAP的情况
-                                    if (!isVTT && !File.Exists(DownDir + "\\Part_0\\!MAP.ts") && !FFmpeg.CheckMPEGTS(s))
+                                    if (!isVTT && !File.Exists(Path.Combine(DownDir, "Part_0", "!MAP.ts")) && !FFmpeg.CheckMPEGTS(s))
                                     {
                                         //转换
                                         LOGGER.PrintLine(strings.remuxToMPEGTS + Path.GetFileName(s));
@@ -412,7 +415,7 @@ namespace N_m3u8DL_CLI
                                 {
                                     LOGGER.WriteLine(strings.partialMergingPleaseWait);
                                     LOGGER.PrintLine(strings.partialMergingPleaseWait, LOGGER.Warning);
-                                    Global.PartialCombineMultipleFiles(Global.GetFiles(DownDir + "\\Part_0", ".ts"));
+                                    Global.PartialCombineMultipleFiles(Global.GetFiles(Path.Combine(DownDir, "Part_0"), ".ts"));
                                 }
 
                                 if (Global.AUDIO_TYPE != "")
@@ -420,7 +423,7 @@ namespace N_m3u8DL_CLI
 
                                 LOGGER.PrintLine(strings.ffmpegMergingPleaseWait);
                                 if (!File.Exists(MuxSetJson))
-                                    FFmpeg.Merge(Global.GetFiles(DownDir + "\\Part_0", ".ts"), MuxFormat, MuxFastStart);
+                                    FFmpeg.Merge(Global.GetFiles(Path.Combine(DownDir, "Part_0"), ".ts"), MuxFormat, MuxFastStart);
                                 else
                                 {
                                     JObject json = JObject.Parse(File.ReadAllText(MuxSetJson, Encoding.UTF8));
@@ -433,16 +436,16 @@ namespace N_m3u8DL_CLI
                                     string comment = json["comment"].Value<string>();
                                     string encodingTool = "";
                                     try { encodingTool = json["encodingTool"].Value<string>(); } catch (Exception) {; }
-                                    FFmpeg.Merge(Global.GetFiles(DownDir + "\\Part_0", ".ts"), muxFormat, fastStart, poster, audioName, title, copyright, comment, encodingTool);
+                                    FFmpeg.Merge(Global.GetFiles(Path.Combine(DownDir, "Part_0"), ".ts"), muxFormat, fastStart, poster, audioName, title, copyright, comment, encodingTool);
                                 }
-                                //Global.CombineMultipleFilesIntoSingleFile(Global.GetFiles(DownDir + "\\Part_0", ".ts"), FFmpeg.OutPutPath + ".ts");
+                                //Global.CombineMultipleFilesIntoSingleFile(Global.GetFiles(Path.Combine(DownDir, "Part_0"), ".ts"), FFmpeg.OutPutPath + ".ts");
 
                                 //Global.ExplorerFile(FFmpeg.OutPutPath + ".mp4");
                             }
                             else
                             {
                                 LOGGER.PrintLine(strings.dolbyVisionContentMerging);
-                                Global.CombineMultipleFilesIntoSingleFile(Global.GetFiles(DownDir + "\\Part_0", ".ts"), FFmpeg.OutPutPath + ".mp4");
+                                Global.CombineMultipleFilesIntoSingleFile(Global.GetFiles(Path.Combine(DownDir, "Part_0"), ".ts"), FFmpeg.OutPutPath + ".mp4");
                             }
                         }
 
@@ -514,31 +517,34 @@ namespace N_m3u8DL_CLI
                     }
 
                     FFmpeg.OutPutPath = Path.Combine(Directory.GetParent(DownDir).FullName, DownName);
-                    FFmpeg.ReportFile = driverName + "\\:" + exePath.Remove(0, exePath.IndexOf(':') + 1).Replace("\\", "/") + "/Logs/" + Path.GetFileNameWithoutExtension(LOGGER.LOGFILE) + fflogName;
+                    FFmpeg.ReportFile = Path.Combine(Directory.GetParent(DownDir).FullName, "Logs", Path.GetFileNameWithoutExtension(LOGGER.LOGFILE) + fflogName);
+                    if (!Directory.Exists(Path.Combine(Directory.GetParent(DownDir).FullName, "Logs")))
+                        Directory.CreateDirectory(Path.Combine(Directory.GetParent(DownDir).FullName, "Logs"));
+
 
                     //合并分段
                     LOGGER.PrintLine(strings.startMerging);
                     for (int i = 0; i < PartsCount; i++)
                     {
-                        string outputFilePath = DownDir + "\\Part_" + i.ToString(partsPadZero) + ".ts";
+                        string outputFilePath = Path.Combine(DownDir, $"Part_{i.ToString(partsPadZero)}.ts");
                         Global.CombineMultipleFilesIntoSingleFile(
-                           Global.GetFiles(DownDir + "\\Part_" + i.ToString(partsPadZero), ".ts"),
+                           Global.GetFiles(Path.Combine(DownDir, $"Part_{i.ToString(partsPadZero)}"), ".ts"),
                            outputFilePath);
                         try
                         {
-                            DirectoryInfo directoryInfo = new DirectoryInfo(DownDir + "\\Part_" + i.ToString(partsPadZero));
+                            DirectoryInfo directoryInfo = new DirectoryInfo(Path.Combine(DownDir, $"Part_{i.ToString(partsPadZero)}"));
                             directoryInfo.Delete(true);
                         }
                         catch (Exception) { }
                     }
-                    
+
 
                     if (BinaryMerge)
                     {
                         LOGGER.PrintLine(strings.binaryMergingPleaseWait);
                         MuxFormat = "ts";
                         //有MAP文件，一般为mp4，采取默认动作
-                        if (File.Exists(DownDir + "\\!MAP.ts")) 
+                        if (File.Exists(Path.Combine(DownDir, "!MAP.ts")))
                             MuxFormat = "mp4";
                         if (isVTT)
                             MuxFormat = "vtt";
@@ -552,7 +558,7 @@ namespace N_m3u8DL_CLI
                             foreach (string s in Global.GetFiles(DownDir, ".ts"))
                             {
                                 //跳过有MAP的情况
-                                if (!isVTT && !File.Exists(DownDir + "\\!MAP.ts") && !FFmpeg.CheckMPEGTS(s))
+                                if (!isVTT && !File.Exists(Path.Combine(DownDir, "!MAP.ts")) && !FFmpeg.CheckMPEGTS(s))
                                 {
                                     //转换
                                     LOGGER.PrintLine(strings.remuxToMPEGTS + Path.GetFileName(s));

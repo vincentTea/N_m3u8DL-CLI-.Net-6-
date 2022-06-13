@@ -17,12 +17,14 @@
 # 下载使用
 * 发行版: https://github.com/nilaoda/N_m3u8DL-CLI/releases
 * 自动构建版`(供测试)`: https://github.com/nilaoda/N_m3u8DL-CLI/actions
- 
+
 # 关于开源
 本项目已于2019年10月9日开源，采用MIT许可证，各取所需。
 
 # 关于跨平台
-未来可期
+移植到基于.Net 6版本；已在ubuntu下正常运行。
+
+编译过程warning较多，暂时未进行优化，不影响使用
 
 # N_m3u8DL-CLI
 一个**简单易用的**m3u8下载器，下载地址：https://github.com/nilaoda/N_m3u8DL-CLI/releases  
@@ -44,7 +46,7 @@
   * 支持仅合并为音频
   * 支持设置特定http代理
   * 支持自动使用系统代理（默认行为, 可禁止）
-  * 支持m3u8dl链接协议（通过web链接调用本机客户端）
+  * 支持m3u8dl链接协议（通过web链接调用本机客户端，.net6版本不支持）
   * 提供SimpleG简易的`GUI`生成常用参数
 
 
@@ -87,17 +89,20 @@ OPTIONS:
   --disableIntegrityCheck    不检测分片数量是否完整
   --noMerge                  禁用自动合并
   --noProxy                  不自动使用系统代理
-  --registerUrlProtocol      注册m3u8dl链接协议
-  --unregisterUrlProtocol    取消注册m3u8dl链接协议
+  --registerUrlProtocol      注册m3u8dl链接协议（.net6版本不支持）
+  --unregisterUrlProtocol    取消注册m3u8dl链接协议（.net6版本不支持）
   --help                     Display this help screen.
   --version                  Display version information.
 ```
 
 # 关于`m3u8dl://`协议
+**为支持跨平台，以下功能已被移除：**
+
 新增命令行参数：
+
 ```
---registerUrlProtocol          注册m3u8dl链接协议
---unregisterUrlProtocol     取消注册m3u8dl链接协议
+--registerUrlProtocol          注册m3u8dl链接协议（.net6版本不支持）
+--unregisterUrlProtocol     取消注册m3u8dl链接协议（.net6版本不支持）
 ```
 
 URI格式：

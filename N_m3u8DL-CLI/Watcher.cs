@@ -31,7 +31,7 @@ namespace N_m3u8DL_CLI
         {
             for (int i = 0; i < PartsCount; i++)
             {
-                Now += Global.GetFileCount(dir + "\\Part_" + i.ToString(DownloadManager.partsPadZero), ".ts");
+                Now += Global.GetFileCount(Path.Combine(dir, $"Part_{i.ToString(DownloadManager.partsPadZero)}"), ".ts");
             }
             watcher.Path = dir;
             watcher.Filter = "*.ts";

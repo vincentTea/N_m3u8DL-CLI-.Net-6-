@@ -89,12 +89,8 @@ namespace N_m3u8DL_CLI
             return title;
         }
 
-        // parseInt(s, radix)
-        public static int GetNum(string str, int numBase)
-        {
-            return Convert.ToInt32(Microsoft.JScript.GlobalObject.parseInt(str, numBase)); 
-        }
-        
+
+
         // 统一设置代理
         // 替换 else if (UseProxyAddress != "") {
         //      WebProxy proxy = new WebProxy(UseProxyAddress);
@@ -227,7 +223,7 @@ namespace N_m3u8DL_CLI
                     {
                         using (Stream streamReceive = webResponse.GetResponseStream())
                         {
-                            using (var bs = new BrotliStream(streamReceive, CompressionMode.Decompress))
+                            using (var bs = new BrotliSharpLib.BrotliStream(streamReceive, CompressionMode.Decompress))
                             {
                                 using (StreamReader sr = new StreamReader(bs, Encoding.UTF8))
                                 {
@@ -269,19 +265,12 @@ namespace N_m3u8DL_CLI
             return htmlCode;
         }
 
-        [DllImport("shell32.dll", ExactSpelling = true)]
-        private static extern void ILFree(IntPtr pidlList);
-        [DllImport("shell32.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
-        private static extern IntPtr ILCreateFromPathW(string pszPath);
-        [DllImport("shell32.dll", ExactSpelling = true)]
-        private static extern int SHOpenFolderAndSelectItems(IntPtr pidlList, uint cild, IntPtr children, uint dwFlags);
-
         //参数：
         //  string dir 指定的文件夹
         //  string ext 文件类型的扩展名，如".txt" , “.exe"
         public static int GetFileCount(string dir, string ext)
         {
-            if (!Directory.Exists(dir)) 
+            if (!Directory.Exists(dir))
                 return 0;
 
             int count = 0;
@@ -295,7 +284,7 @@ namespace N_m3u8DL_CLI
             }
             return count;
         }
-        
+
         /// <summary>
         /// 寻找指定目录下指定后缀的文件的详细路径 如".txt"
         /// </summary>
@@ -348,14 +337,14 @@ namespace N_m3u8DL_CLI
             else
                 div = 200;
 
-            string outputName = Path.GetDirectoryName(files[0]) + "\\T";
+            string outputName = Path.Combine(Path.GetDirectoryName(files[0]), "T");
             int index = 0; //序号
 
             //按照div的容量分割为小数组
             string[][] li = Enumerable.Range(0, files.Count() / div + 1).Select(x => files.Skip(x * div).Take(div).ToArray()).ToArray();
             foreach (var items in li)
             {
-                if (items.Count() == 0) 
+                if (items.Count() == 0)
                     continue;
                 CombineMultipleFilesIntoSingleFile(items, outputName + index.ToString("0000") + ".ts");
                 //合并后删除这些文件
@@ -407,7 +396,7 @@ namespace N_m3u8DL_CLI
             }
             //Global.ExplorerFile(outputFilePath);
         }
-        
+
 
 
         /// <summary>
@@ -592,7 +581,7 @@ namespace N_m3u8DL_CLI
         public static void HttpDownloadFile(string url, string path, int timeOut = 20000, string headers = "", long startByte = 0, long expectByte = -1)
         {
             int retry = 0;
-            reDownload:
+        reDownload:
             try
             {
                 if (File.Exists(path))
@@ -812,12 +801,12 @@ namespace N_m3u8DL_CLI
         public static string GetTagAttribute(string attributeList, string key)
         {
             /*#EXT-X-STREAM-INF:PROGRAM-ID=1,RESOLUTION=1056x594,BANDWIDTH=1963351,CODECS="mp4a.40.5,avc1.4d001f",FRAME-RATE=30.000,AUDIO="aac",AVERAGE-BANDWIDTH=1655131*/
-            if (attributeList != "") 
+            if (attributeList != "")
             {
                 try
                 {
                     string tmp = attributeList.Trim();
-                    if (tmp.Contains(key + "=")) 
+                    if (tmp.Contains(key + "="))
                     {
                         if (tmp[tmp.IndexOf(key + "=") + key.Length + 1] == '\"')
                         {
@@ -903,7 +892,7 @@ namespace N_m3u8DL_CLI
                     .Replace(RegexFind(@" \(\[.*?\)", s)[0].ToString(), "")
                     .Replace(": ", " ");
 
-                if (VIDEO_TYPE == "" && res.Contains(": Video")) 
+                if (VIDEO_TYPE == "" && res.Contains(": Video"))
                 {
                     if (res.Contains("Video dvvideo"))  //爱奇艺杜比视界
                     {
@@ -958,11 +947,11 @@ namespace N_m3u8DL_CLI
                     FFmpeg.UseAACFilter = false;
                 }
 
-                if ((VIDEO_TYPE == "" || VIDEO_TYPE == "IGNORE") && res.Contains("Audio eac3")) 
+                if ((VIDEO_TYPE == "" || VIDEO_TYPE == "IGNORE") && res.Contains("Audio eac3"))
                 {
                     AUDIO_TYPE = "eac3";
                 }
-                else if((VIDEO_TYPE == "" || VIDEO_TYPE == "IGNORE") && res.Contains("Audio aac"))
+                else if ((VIDEO_TYPE == "" || VIDEO_TYPE == "IGNORE") && res.Contains("Audio aac"))
                 {
                     AUDIO_TYPE = "aac";
                 }
@@ -1147,86 +1136,72 @@ namespace N_m3u8DL_CLI
             }
         }
 
-        [DllImport("shell32.dll", SetLastError = true)]
-        static extern IntPtr CommandLineToArgvW([MarshalAs(UnmanagedType.LPWStr)] string lpCmdLine, out int pNumArgs);
-        //使用Win32 API解析字符串为命令行参数
+        //解析字符串为命令行参数
         public static IEnumerable<string> ParseArguments(string commandLine)
         {
-            int argc;
-            var argv = CommandLineToArgvW(commandLine, out argc);
-            if (argv == IntPtr.Zero)
-                throw new System.ComponentModel.Win32Exception();
-            try
-            {
-                var args = new string[argc];
-                for (var i = 0; i < args.Length; i++)
-                {
-                    var p = Marshal.ReadIntPtr(argv, i * IntPtr.Size);
-                    args[i] = Marshal.PtrToStringUni(p);
-                }
+            var result = new StringBuilder();
 
-                return args;
-            }
-            finally
+            var quoted = false;
+            var escaped = false;
+            var started = false;
+            var allowcaret = false;
+            for (int i = 0; i < commandLine.Length; i++)
             {
-                Marshal.FreeHGlobal(argv);
+                var chr = commandLine[i];
+
+                if (chr == '^' && !quoted)
+                {
+                    if (allowcaret)
+                    {
+                        result.Append(chr);
+                        started = true;
+                        escaped = false;
+                        allowcaret = false;
+                    }
+                    else if (i + 1 < commandLine.Length && commandLine[i + 1] == '^')
+                    {
+                        allowcaret = true;
+                    }
+                    else if (i + 1 == commandLine.Length)
+                    {
+                        result.Append(chr);
+                        started = true;
+                        escaped = false;
+                    }
+                }
+                else if (escaped)
+                {
+                    result.Append(chr);
+                    started = true;
+                    escaped = false;
+                }
+                else if (chr == '"')
+                {
+                    quoted = !quoted;
+                    started = true;
+                }
+                else if (chr == '\\' && i + 1 < commandLine.Length && commandLine[i + 1] == '"')
+                {
+                    escaped = true;
+                }
+                else if (chr == ' ' && !quoted)
+                {
+                    if (started) yield return result.ToString();
+                    result.Clear();
+                    started = false;
+                }
+                else
+                {
+                    result.Append(chr);
+                    started = true;
+                }
             }
+
+            if (started) yield return result.ToString();
         }
 
-        //重载
-        public class WebClientEx : WebClient
-        {
-            private readonly long from;
-            private readonly long to;
-            private readonly int timeout;
-            private readonly bool setTimeout;
-            private readonly bool setRange;
 
-            public WebClientEx()
-            {
-                
-            }
 
-            public WebClientEx(long from, long to)
-            {
-                this.from = from;
-                this.to = to;
-                setRange = true;
-            }
-
-            public WebClientEx(int timeout)
-            {
-                this.timeout = timeout;
-                setTimeout = true;
-            }
-
-            public WebClientEx(int timeout, long from, long to)
-            {
-                this.timeout = timeout;
-                setTimeout = true;
-                this.from = from;
-                this.to = to;
-                setRange = true;
-            }
-
-            protected override WebRequest GetWebRequest(Uri address)
-            {
-                var wr = (HttpWebRequest)base.GetWebRequest(address);
-                if (NoProxy)
-                {
-                    wr.Proxy = null;
-                }
-                else if (UseProxyAddress != "")
-                {
-                    SetProxy(wr);
-                }
-                if (setRange)
-                    wr.AddRange(this.from, this.to);
-                if (setTimeout)
-                    wr.Timeout = timeout; // timeout in milliseconds (ms)
-                return wr;
-            }
-        }
 
         /**
          * 通过X-TIMESTAMP-MAP 调整VTT字幕的时间轴

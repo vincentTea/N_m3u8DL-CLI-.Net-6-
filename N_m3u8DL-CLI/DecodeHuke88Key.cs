@@ -16,7 +16,7 @@ namespace N_m3u8DL_CLI
             var enc = new Regex("eyJ\\w{100,}").Match(url).Value;
             var json = Encoding.UTF8.GetString(Convert.FromBase64String(enc));
             JObject jObject = JObject.Parse(json);
-            var key = jObject["overlayKey"].ToString();
+            var key = jObject["overlayKey"] == null? "": jObject["overlayKey"].ToString();
             var iv = jObject["overlayIv"].ToString();
             return new string[] { key, iv };
         }

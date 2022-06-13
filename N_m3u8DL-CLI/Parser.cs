@@ -193,7 +193,7 @@ namespace N_m3u8DL_CLI
             }
 
             //针对AppleTv修正
-            if (m3u8Content.Contains("#EXT-X-DISCONTINUITY") && m3u8Content.Contains("#EXT-X-MAP") && (M3u8Url.Contains(".apple.com/") || Regex.IsMatch(m3u8Content, "#EXT-X-MAP.*\\.apple\\.com/"))) 
+            if (m3u8Content.Contains("#EXT-X-DISCONTINUITY") && m3u8Content.Contains("#EXT-X-MAP") && (M3u8Url.Contains(".apple.com/") || Regex.IsMatch(m3u8Content, "#EXT-X-MAP.*\\.apple\\.com/")))
             {
                 //只取加密部分即可
                 Regex ykmap = new Regex("(#EXT-X-KEY:[\\s\\S]*?)(#EXT-X-DISCONTINUITY|#EXT-X-ENDLIST)");
@@ -333,11 +333,11 @@ namespace N_m3u8DL_CLI
                             segments = new JArray();
                         }
                     }
-                    else if (line.StartsWith(HLSTags.ext_x_cue_out)) ;
-                    else if (line.StartsWith(HLSTags.ext_x_cue_out_start)) ;
-                    else if (line.StartsWith(HLSTags.ext_x_cue_span)) ;
-                    else if (line.StartsWith(HLSTags.ext_x_version)) ;
-                    else if (line.StartsWith(HLSTags.ext_x_allow_cache)) ;
+                    else if (line.StartsWith(HLSTags.ext_x_cue_out)) { }
+                    else if (line.StartsWith(HLSTags.ext_x_cue_out_start)) { }
+                    else if (line.StartsWith(HLSTags.ext_x_cue_span)) { }
+                    else if (line.StartsWith(HLSTags.ext_x_version)) { }
+                    else if (line.StartsWith(HLSTags.ext_x_allow_cache)) { }
                     //解析KEY
                     else if (line.StartsWith(HLSTags.ext_x_key))
                     {
@@ -902,7 +902,7 @@ namespace N_m3u8DL_CLI
             //若存在多个清晰度条目，输出另一个json文件存放
             if (extLists.Count != 0)
             {
-                File.Copy(m3u8SavePath, Path.GetDirectoryName(m3u8SavePath) + "\\master.m3u8", true);
+                File.Copy(m3u8SavePath, Path.Combine(Path.GetDirectoryName(m3u8SavePath), "master.m3u8"), true);
                 LOGGER.WriteLine("Master List Found");
                 LOGGER.PrintLine(strings.masterListFound, LOGGER.Warning);
                 var json = new JObject();
@@ -922,7 +922,7 @@ namespace N_m3u8DL_CLI
                 //输出json文件
                 LOGGER.WriteLine(strings.wrtingMasterMeta);
                 LOGGER.PrintLine(strings.wrtingMasterMeta);
-                File.WriteAllText(Path.GetDirectoryName(jsonSavePath) + "\\playLists.json", json.ToString());
+                File.WriteAllText(Path.Combine(Path.GetDirectoryName(jsonSavePath), "playLists.json"), json.ToString());
                 LOGGER.WriteLine(strings.selectPlaylist + ": " + bestUrl);
                 LOGGER.PrintLine(strings.selectPlaylist);
                 LOGGER.WriteLine(strings.startReParsing);
@@ -939,7 +939,7 @@ namespace N_m3u8DL_CLI
         private void ForceCanonicalPathAndQuery(Uri uri)
         {
             string paq = uri.PathAndQuery; // need to access PathAndQuery
-            FieldInfo flagsFieldInfo = typeof(Uri).GetField("m_Flags", BindingFlags.Instance | BindingFlags.NonPublic);
+            FieldInfo? flagsFieldInfo = typeof(Uri).GetField("m_Flags", BindingFlags.Instance | BindingFlags.NonPublic);
             ulong flags = (ulong)flagsFieldInfo.GetValue(uri);
             flags &= ~((ulong)0x30); // Flags.PathNotCanonical|Flags.QueryNotCanonical
             flagsFieldInfo.SetValue(uri, flags);
@@ -962,8 +962,8 @@ namespace N_m3u8DL_CLI
 
 
             Uri uri1 = new Uri(baseurl);  //这里直接传完整的URL即可
-            Uri uri2 = new Uri(uri1, url);  
-            ForceCanonicalPathAndQuery(uri2);  //兼容XP的低版本.Net
+            Uri uri2 = new Uri(uri1, url);
+            //ForceCanonicalPathAndQuery(uri2);  //兼容XP的低版本.Net
             url = uri2.ToString();
 
 
@@ -983,7 +983,7 @@ namespace N_m3u8DL_CLI
 
             return url;
         }
-        
+
         /// <summary>
         /// 从url中截取字符串充当baseurl
         /// </summary>

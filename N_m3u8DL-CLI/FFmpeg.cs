@@ -25,7 +25,7 @@ namespace N_m3u8DL_CLI
             string dateString = string.IsNullOrEmpty(REC_TIME) ? DateTime.Now.ToString("o") : REC_TIME;
 
             //同名文件已存在的共存策略
-            if (File.Exists($"{OutPutPath}.{muxFormat.ToLower()}")) 
+            if (File.Exists($"{OutPutPath}.{muxFormat.ToLower()}"))
             {
                 OutPutPath = Path.Combine(Path.GetDirectoryName(OutPutPath),
                     Path.GetFileName(OutPutPath) + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss"));
@@ -35,7 +35,7 @@ namespace N_m3u8DL_CLI
             string data = string.Empty;
             string ddpAudio = string.Empty;
             string addPoster = "-map 1 -c:v:1 copy -disposition:v:1 attached_pic";
-            ddpAudio = (File.Exists($"{Path.GetFileNameWithoutExtension(OutPutPath + ".mp4")}.txt") ? File.ReadAllText($"{Path.GetFileNameWithoutExtension(OutPutPath + ".mp4")}.txt") : "") ;
+            ddpAudio = (File.Exists($"{Path.GetFileNameWithoutExtension(OutPutPath + ".mp4")}.txt") ? File.ReadAllText($"{Path.GetFileNameWithoutExtension(OutPutPath + ".mp4")}.txt") : "");
             if (!string.IsNullOrEmpty(ddpAudio)) UseAACFilter = false;
 
 
@@ -95,12 +95,12 @@ namespace N_m3u8DL_CLI
             {
                 Run(FFMPEG_PATH,
                     "-loglevel quiet -i \"" + file + "\" -map 0 -c copy -copy_unknown -f mpegts -bsf:v h264_mp4toannexb \""
-                    + Path.GetFileNameWithoutExtension(file) + "[MPEGTS].ts\"", 
+                    + Path.GetFileNameWithoutExtension(file) + "[MPEGTS].ts\"",
                     Path.GetDirectoryName(file));
-                if (File.Exists(Path.GetDirectoryName(file) + "\\" + Path.GetFileNameWithoutExtension(file) + "[MPEGTS].ts"))
+                if (File.Exists(Path.Combine(Path.GetDirectoryName(file), Path.GetFileNameWithoutExtension(file) + "[MPEGTS].ts")))
                 {
                     File.Delete(file);
-                    File.Move(Path.GetDirectoryName(file) + "\\" + Path.GetFileNameWithoutExtension(file) + "[MPEGTS].ts", file);
+                    File.Move(Path.Combine(Path.GetDirectoryName(file), Path.GetFileNameWithoutExtension(file) + "[MPEGTS].ts"), file);
                 }
             }
             else if (Global.VIDEO_TYPE == "H265")
@@ -109,10 +109,10 @@ namespace N_m3u8DL_CLI
                     "-loglevel quiet -i \"" + file + "\" -map 0 -c copy -copy_unknown -f mpegts -bsf:v hevc_mp4toannexb \""
                     + Path.GetFileNameWithoutExtension(file) + "[MPEGTS].ts\"",
                     Path.GetDirectoryName(file));
-                if (File.Exists(Path.GetDirectoryName(file) + "\\" + Path.GetFileNameWithoutExtension(file) + "[MPEGTS].ts"))
+                if (File.Exists(Path.Combine(Path.GetDirectoryName(file), Path.GetFileNameWithoutExtension(file) + "[MPEGTS].ts")))
                 {
                     File.Delete(file);
-                    File.Move(Path.GetDirectoryName(file) + "\\" + Path.GetFileNameWithoutExtension(file) + "[MPEGTS].ts", file);
+                    File.Move(Path.Combine(Path.GetDirectoryName(file), Path.GetFileNameWithoutExtension(file) + "[MPEGTS].ts"), file);
                 }
             }
             else
@@ -161,7 +161,7 @@ namespace N_m3u8DL_CLI
             if (DownloadManager.PartsCount > 1)
                 return false;
 
-            using (FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read)) 
+            using (FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read))
             {
                 byte[] firstByte = new byte[1];
                 fs.Read(firstByte, 0, 1);

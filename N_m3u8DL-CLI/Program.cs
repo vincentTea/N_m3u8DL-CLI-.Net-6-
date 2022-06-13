@@ -23,8 +23,7 @@ namespace N_m3u8DL_CLI.NetCore
     class Program
     {
         public delegate bool ControlCtrlDelegate(int CtrlType);
-        [DllImport("kernel32.dll")]
-        private static extern bool SetConsoleCtrlHandler(ControlCtrlDelegate HandlerRoutine, bool Add);
+
         private static ControlCtrlDelegate cancelHandler = new ControlCtrlDelegate(HandlerRoutine);
         public static bool HandlerRoutine(int CtrlType)
         {
@@ -51,13 +50,13 @@ namespace N_m3u8DL_CLI.NetCore
         static void Main(string[] args)
         {
             /******************************************************/
-            SetConsoleCtrlHandler(cancelHandler, true);
+            //SetConsoleCtrlHandler(cancelHandler, true);
             ServicePointManager.ServerCertificateValidationCallback = ValidateServerCertificate;
             ServicePointManager.DefaultConnectionLimit = 1024;
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3
-                                   | SecurityProtocolType.Tls
-                                   | (SecurityProtocolType)0x300 //Tls11  
-                                   | (SecurityProtocolType)0xC00; //Tls12  
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls
+                                   | SecurityProtocolType.Tls11 //Tls11  
+                                   | SecurityProtocolType.Tls12 //Tls12
+                                   | SecurityProtocolType.Tls13; //Tls12  
             /******************************************************/
 
             try
@@ -72,34 +71,7 @@ namespace N_m3u8DL_CLI.NetCore
             }
             catch (Exception) {; }
 
-            // 处理m3u8dl URL协议
-            if (args.Length == 1)
-            {
-                if (args[0].ToLower().StartsWith("m3u8dl:"))
-                {
-                    var base64 = args[0].Replace("m3u8dl://", "").Replace("m3u8dl:", "");
-                    var cmd = "";
-                    try { cmd = Encoding.UTF8.GetString(Convert.FromBase64String(base64)); }
-                    catch (FormatException) { cmd = Encoding.UTF8.GetString(Convert.FromBase64String(base64.TrimEnd('/'))); }
-                    //修正工作目录
-                    Environment.CurrentDirectory = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
-                    args = Global.ParseArguments(cmd).ToArray();  //解析命令行
-                }
-                else if (args[0] == "--registerUrlProtocol")
-                {
-                    RequireElevated(string.Join(" ", args));
-                    bool result = RegisterUriScheme("m3u8dl", Assembly.GetExecutingAssembly().Location);
-                    Console.WriteLine(result ? strings.registerUrlProtocolSuccessful : strings.registerUrlProtocolFailed);
-                    Environment.Exit(0);
-                }
-                else if (args[0] == "--unregisterUrlProtocol")
-                {
-                    RequireElevated(string.Join(" ", args));
-                    bool result = UnregisterUriScheme("m3u8dl");
-                    Console.WriteLine(result ? strings.unregisterUrlProtocolSuccessful : strings.unregisterUrlProtocolFailed);
-                    Environment.Exit(0);
-                }
-            }
+
 
             //寻找ffmpeg.exe
             if (File.Exists("ffmpeg.exe"))
@@ -205,7 +177,7 @@ namespace N_m3u8DL_CLI.NetCore
                 string fileName = Global.GetValidFileName(o.SaveName);
                 string reqHeaders = o.Headers;
                 string muxSetJson = o.MuxSetJson ?? "MUXSETS.json";
-                string workDir = CURRENT_PATH + "\\Downloads";
+                string workDir = Path.Combine(CURRENT_PATH, "Downloads");
                 string keyFile = "";
                 string keyBase64 = "";
                 string keyIV = "";
@@ -343,9 +315,11 @@ namespace N_m3u8DL_CLI.NetCore
                 parser.KeyFile = keyFile;
                 if (baseUrl != "")
                     parser.BaseUrl = baseUrl;
-                parser.Headers = reqHeaders;
-                string exePath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
-                LOGGER.LOGFILE = Path.Combine(exePath, "Logs", DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-fff") + ".log");
+                parser.Headers = reqHeaders; 
+                //string exePath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
+                LOGGER.LOGFILE = Path.Combine(workDir, "Logs", DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss-fff") + ".log");
+                if (!Directory.Exists(Path.Combine(workDir, "Logs")))
+                    Directory.CreateDirectory(Path.Combine(workDir, "Logs"));
                 LOGGER.InitLog();
                 LOGGER.WriteLine(strings.startParsing + testurl);
                 LOGGER.PrintLine(strings.startParsing + " " + testurl, LOGGER.Warning);
@@ -442,65 +416,16 @@ namespace N_m3u8DL_CLI.NetCore
             }
             catch (Exception ex)
             {
-                LOGGER.PrintLine(ex.Message, LOGGER.Error);
+
+                LOGGER.PrintLine(ex.Message + $" {ex.StackTrace[0]}", LOGGER.Error);
+                LOGGER.PrintLine(ex.ToString(), LOGGER.Error);
+                LOGGER.PrintLine(ex.Source, LOGGER.Error);
             }
         }
 
-        public static bool RegisterUriScheme(string scheme, string applicationPath)
-        {
-            try
-            {
-                using (var schemeKey = Registry.ClassesRoot.CreateSubKey(scheme, writable: true))
-                {
-                    schemeKey.SetValue("", "URL:m3u8DL Protocol");
-                    schemeKey.SetValue("URL Protocol", "");
-                    using (var defaultIconKey = schemeKey.CreateSubKey("DefaultIcon"))
-                    {
-                        defaultIconKey.SetValue("", $"\"{applicationPath}\",1");
-                    }
-                    using (var shellKey = schemeKey.CreateSubKey("shell"))
-                    using (var openKey = shellKey.CreateSubKey("open"))
-                    using (var commandKey = openKey.CreateSubKey("command"))
-                    {
-                        commandKey.SetValue("", $"\"{applicationPath}\" \"%1\"");
-                        return true;
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-            }
 
-            return false;
-        }
 
-        public static bool UnregisterUriScheme(string scheme)
-        {
-            try
-            {
-                Registry.ClassesRoot.DeleteSubKeyTree(scheme);
-                return true;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-            }
 
-            return false;
-        }
-
-        public static void RequireElevated(string cmd)
-        {
-            if (!UACHelper.UACHelper.IsElevated)
-            {
-                string[] arguments = Environment.GetCommandLineArgs();
-                UACHelper.UACHelper.StartElevated(
-                    new ProcessStartInfo(Assembly.GetExecutingAssembly().Location, cmd)
-                );
-                Environment.Exit(0);
-            }
-        }
 
         private static void DisplayHelp(ParserResult<MyOptions> result, IEnumerable<Error> errs)
         {
