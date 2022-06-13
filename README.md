@@ -26,6 +26,12 @@
 
 编译过程warning较多，暂时未进行优化，不影响使用
 
+
+# 跨平台注意事项
+ffmpeg调用的路径并没有处理，需要在编译后的目录下建立个ffmpeg.exe的软链：
+先用：whereis ffmpeg 看看ffmpeg在哪个路径，比如：/usr/bin/ffmpeg
+ln -s /usr/bin/ffmpeg ./ffmpeg.exe
+
 # N_m3u8DL-CLI
 一个**简单易用的**m3u8下载器，下载地址：https://github.com/nilaoda/N_m3u8DL-CLI/releases  
 
